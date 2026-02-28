@@ -6,13 +6,13 @@ from std_msgs.msg import Bool
 from geometry_msgs.msg import Pose, PoseArray, PoseStamped, Point, Quaternion
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-
+import time
 class LOS_vrx(Node):
 
     def __init__(self):
         super().__init__('LOS_node')
         signal.signal(signal.SIGINT, self.handle_signal)   
-        self.waypoints = np.array([[75.0,5.0,1.5708],[50.0,20.0,1.5708],[40.0,80.0,0.7854],[150.0,60.0,1.5708],[10.0,25.0,2.3562],])
+        self.waypoints = np.array([[75.0,5.0,1.5708],[75.0,45.0,1.5708],[5.0,45.0,0.7854],[75.0,45.0,1.5708],[10.0,25.0,2.3562],])
         #self.waypoints = np.array([])
         self.msg_pid = PoseStamped()
         self.create_subscription(Odometry, '/kf/odom', self.loc_callback, 10)
@@ -23,7 +23,7 @@ class LOS_vrx(Node):
         self.first_wp_flag = True
         self.GCS_x = self.GCS_y = self.los_x = self.los_y = self.apf_waypoint_x = self.apf_waypoint_y = None
         self.first_wp_flag = True
-        self.yaw_tol = np.deg2rad(20)
+        self.yaw_tol = np.deg2rad(360)
         self.wp_rad = 4.0
         self.finalgoal = np.array([150.0,100.0])
         self.in_final_goal = False
@@ -63,7 +63,8 @@ class LOS_vrx(Node):
                 current_pos = np.array([self.GCS_x, self.GCS_y, self.GCS_yaw])
 
                 if self.first_wp_flag:
-                    self.first_wp = current_pos
+                    #self.first_wp = current_pos
+                    self.first_wp = np.array([5.0,5.0,0.0])
                     self.first_wp_flag = False
 
                 prev_wp = self.first_wp if self.i == 0 else self.waypoints[self.i - 1]
@@ -79,7 +80,7 @@ class LOS_vrx(Node):
                 pos_err = np.linalg.norm(current_pos[:2] - current_wp[:2])
                 yaw_err = ((current_pos[2] - current_wp[2] + np.pi) % (2 * np.pi)) - np.pi
                 self.get_logger().info(f"pos_err:{pos_err}, yaw_err:{yaw_err}, yaw_tol:{self.yaw_tol}")
-                if pos_err < self.wp_rad and abs(yaw_err) < self.yaw_tol or -1.0<(z)<1.0: #or -1.0<(z)<1.0
+                if pos_err < self.wp_rad : #and abs(yaw_err) < self.yaw_tol or -1.0<(z)<1.0: #or -1.0<(z)<1.0
                     if self.in_final_goal:
                         self.get_logger().info(f"Final goal reached")
                         self.finalgoal_reached = True
@@ -112,6 +113,7 @@ def main(args=None):
     rclpy.init(args=args)
     LOS_node = LOS_vrx()
     try:
+        #time.sleep(2)
         while rclpy.ok():
             rclpy.spin_once(LOS_node)
             # guidance_node.plotter.plot_current_state(guidance_node.los_x, guidance_node.los_y, guidance_node.apf_waypoint_x, guidance_node.apf_waypoint_y, guidance_node.GCS_x, guidance_node.GCS_y, guidance_node.waypoints, guidance_node.finalgoal, guidance_node.buoy_array, guidance_node.obstacles, guidance_node.wp_rad, guidance_node.rho_ob)

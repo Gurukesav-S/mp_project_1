@@ -154,8 +154,18 @@ class PID(Node):
 
             Fd = 0.0
             Mz = 0.0
+            heading_tolerance = np.radians(10)
 
-            if dist > self.th1:
+            if abs(alpha) > heading_tolerance and dist > self.th2:
+                self.get_logger().info(f"Aligning Heading: alpha={np.degrees(alpha):.2f}")
+                # Use Alpha PID but keep Fd at 0.0
+                _, Mz = self.compute_forces(
+                    e_dist=0.0, e_ang=alpha, e_ori=0.0,
+                    kp_a=15.0, kd_a=10.0, ki_a=0.0 # Slightly higher gains for spot-turn
+                )
+                Fd = 0.0
+
+            elif dist > self.th1:
                 Fd, Mz = self.compute_forces(
                     e_dist=dist, e_ang=alpha, e_ori=0.0,
                     kp_d=3.0, kd_d=0.1, ki_d=0.0,
@@ -182,6 +192,8 @@ class PID(Node):
             thrusts = self.allocate_forces_to_thrusters(Fd, Mz)
             thrust_left = thrusts[0]*50
             thrust_right = thrusts[1]*50
+            thrust_left = np.clip(thrust_left, -500.0, 500.0)
+            thrust_right = np.clip(thrust_right, -500.0, 500.0)
 
             self.publish_thrust(thrust_left, thrust_right)
 

@@ -8,11 +8,11 @@ def generate_launch_description():
             executable='kinematics_filter',
             name='kinematics_filter_node'
         ),
-        Node(
-            package='vrx_navigation',
-            executable='los_guidance',
-            name='LOS_node'
-        ),
+        # Node(
+        #     package='vrx_navigation',
+        #     executable='los_guidance',
+        #     name='LOS_node'
+        #),
         Node(
             package='vrx_navigation',
             executable='pid_controller',
@@ -22,5 +22,10 @@ def generate_launch_description():
             package='vrx_navigation',
             executable='map_viz',
             name='vrx_grid_plotter'
+        ),
+        Node(
+            package='vrx_navigation',
+            executable='path_planner',
+            name='path_planner'
         )
     ])

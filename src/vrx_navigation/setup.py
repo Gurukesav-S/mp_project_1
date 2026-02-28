@@ -56,6 +56,7 @@ setup(
             'los_guidance = vrx_navigation.LOS_vrx:main',
             'pid_controller = vrx_navigation.PID_vrx:main',
             'map_viz = vrx_navigation.map:main',
+            'path_planner = vrx_navigation.path_planner:main'
         ],
     },
 )

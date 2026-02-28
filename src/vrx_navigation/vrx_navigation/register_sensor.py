@@ -84,7 +84,11 @@ class gnss():
             # self.origin_gps = [-33.72281907897446, 150.67395245498903]
             # self.origin_gps = [-33.72272084808015, 150.67349560818232]
             # self.origin_gps =[-33.722790, 150.673970]
-            self.origin_gps = [-33.7228139, 150.6739363]
+            #self.origin_gps = [-33.7228139, 150.6739363]
+            self.origin_gps = [-33.7227241, 150.6739363]
+
+
+            -33.7227241, 150.6739363
             self.origin_flag = 1
             #print("origin: ", self.origin_gps[0], self.origin_gps[1])
         self.gps_to_xy_ENU(self.origin_gps[0], self.origin_gps[1], self.lat, self.long)
