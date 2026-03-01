@@ -12,7 +12,7 @@ class PathPlannerNode(Node):
         super().__init__('path_planner_node')
         
         # Hardcoded Goal in ENU meters
-        self.goal_pos = (15, 75) # (x, y)
+        self.goal_pos = (105, 75) # (x, y)
         self.current_pos = None
         self.grid = None
         self.cell_size = 10.0
@@ -54,7 +54,7 @@ class PathPlannerNode(Node):
 
         # 1. Plan path if not already planned
         if not self.path:
-            start_grid = self.world_to_grid(*self.current_pos)
+            start_grid = (0,0) #self.world_to_grid(*self.current_pos)
             goal_grid = self.world_to_grid(*self.goal_pos)
             
             # Use your A* logic (heuristic=0 for Manhattan)
@@ -88,7 +88,7 @@ class PathPlannerNode(Node):
             
             # Check if reached current waypoint (radius of 4m as per your LOS_vrx.py)
             dist = np.hypot(target_x - self.current_pos[0], target_y - self.current_pos[1])
-            if dist < 2.0:
+            if dist < 3.0:
                 self.current_wp_idx += 1
                 return
 

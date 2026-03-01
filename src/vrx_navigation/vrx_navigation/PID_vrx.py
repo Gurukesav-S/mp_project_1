@@ -156,16 +156,16 @@ class PID(Node):
             Mz = 0.0
             heading_tolerance = np.radians(10)
 
-            # if abs(alpha) > heading_tolerance and dist > self.th2:
-            #     self.get_logger().info(f"Aligning Heading: alpha={np.degrees(alpha):.2f}")
-            #     # Use Alpha PID but keep Fd at 0.0
-            #     _, Mz = self.compute_forces(
-            #         e_dist=0.0, e_ang=alpha, e_ori=0.0,
-            #         kp_a=15.0, kd_a=10.0, ki_a=0.0 # Slightly higher gains for spot-turn
-            #     )
-            #     Fd = 0.0
+            if abs(alpha) > heading_tolerance and dist > self.th2:
+                self.get_logger().info(f"Aligning Heading: alpha={np.degrees(alpha):.2f}")
+                # Use Alpha PID but keep Fd at 0.0
+                _, Mz = self.compute_forces(
+                    e_dist=0.0, e_ang=alpha, e_ori=0.0,
+                    kp_a=15.0, kd_a=10.0, ki_a=0.0 # Slightly higher gains for spot-turn
+                )
+                Fd = 0.0
 
-            if dist > self.th1:
+            elif dist > self.th1:
                 Fd, Mz = self.compute_forces(
                     e_dist=dist, e_ang=alpha, e_ori=0.0,
                     kp_d=3.0, kd_d=0.1, ki_d=0.0,
