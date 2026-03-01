@@ -106,7 +106,7 @@ class kalman_filter(Node):
 
     def update(self):
         self.X_minus = np.dot(self.phi_mat,self.filtered_state)                  # a_priori_state
-        self.get_logger().info(f"u : {self.X_minus[3]}, v : {self.X_minus[4]}")
+        #self.get_logger().info(f"u : {self.X_minus[3]}, v : {self.X_minus[4]}")
         # self.get_logger().info(f"u : {self.X_minus[3]}, v : {self.X_minus[4]}")
         # self.get_logger().info(f"sbg_ax : {self.measured_state[4]}, sbg_ay : {self.measured_state[5]}")
         self.P_minus = \
@@ -118,7 +118,7 @@ class kalman_filter(Node):
 
     def correct_imu(self, imu_N):
         ''' IMU data is coming. So measured states are (psi,r,ax,ay) '''
-        self.get_logger().info('CORRECTION OF IMU!!')
+        #self.get_logger().info('CORRECTION OF IMU!!')
         imu_N.transform_to_ENU()
 
         self.measured_state[2] = imu_N.orientation_e[2]
@@ -148,14 +148,14 @@ class kalman_filter(Node):
         measured_state[2] = self.measured_state[4]
         measured_state[3] = self.measured_state[5]
 
-        self.get_logger().info(f"sbg_ax : {measured_state[2]}, sbg_ay : {measured_state[3]}")
+        #self.get_logger().info(f"sbg_ax : {measured_state[2]}, sbg_ay : {measured_state[3]}")
         measurement_error = measured_state - np.dot(C_mat,self.X_minus)
         self.imuInn.x = measurement_error[0]
         self.imuInn.y = measurement_error[1]
         self.imuInn.z = measurement_error[2]
         self.imuInn.w = measurement_error[3]
         self.filtered_state = self.X_minus + np.dot(kalman_gain,measurement_error)
-        self.get_logger().info(f"r from filter : {self.filtered_state[5]}")
+        #self.get_logger().info(f"r from filter : {self.filtered_state[5]}")
 
         ''' Covariance Corrector '''
         cc1 = np.identity(self.num_s) - np.dot(kalman_gain,C_mat)
@@ -169,10 +169,10 @@ class kalman_filter(Node):
     def correct_uwb(self, uwb_N):
         
         ''' UWB data is coming. So measured states are (x,y) '''
-        self.get_logger().info('CORRECTION OF UWB!!')
+        #self.get_logger().info('CORRECTION OF UWB!!')
         self.measured_state[0] = uwb_N.x
         self.measured_state[1] = uwb_N.y
-        self.get_logger().info(f'x:{self.measured_state[0]}, y:{self.measured_state[1]}')
+        #self.get_logger().info(f'x:{self.measured_state[0]}, y:{self.measured_state[1]}')
         C_mat = np.zeros((2,self.num_s))
         C_mat[0,0] = C_mat[1,1] = 1
 
@@ -206,7 +206,7 @@ class kalman_filter(Node):
     def correct_gnss(self, gnss_N):
         
         ''' GPS data is coming. So measured states are (x,y) '''
-        self.get_logger().info('CORRECTION OF GPS!!')
+        #self.get_logger().info('CORRECTION OF GPS!!')
         self.measured_state[0] = gnss_N.x
         self.measured_state[1] = gnss_N.y
         # self.get_logger().info("gpsxy %d %d ", self.measured_state[0], self.measured_state[1])
@@ -254,20 +254,20 @@ class kalman_filter(Node):
         for imu_N in self.imu_measurements:
             if imu_N.flag == 1:
                 self.correct_imu(imu_N)
-                self.get_logger().info('IMU corrected')
+                #self.get_logger().info('IMU corrected')
                 imu_N.flag = 0
 
         # self.get_logger().info(f"u : {X_minus[3]}, v : {X_minus[4]}")
         for gnss_N in self.gnss_measurements:
             if gnss_N.flag == 1:
                 self.correct_gnss(gnss_N)
-                self.get_logger().info('GPS corrected')
+                #self.get_logger().info('GPS corrected')
                 gnss_N.flag = 0
 
         for uwb_N in self.uwb_measurements:
             if uwb_N.flag == 1:
                 self.correct_uwb(uwb_N)
-                self.get_logger().info('UWB corrected')
+                #self.get_logger().info('UWB corrected')
                 uwb_N.flag = 0
         
         

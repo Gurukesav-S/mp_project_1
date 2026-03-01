@@ -1,8 +1,9 @@
 import rclpy
 from rclpy.node import Node
-from nav_msgs.msg import OccupancyGrid, Odometry
+from nav_msgs.msg import OccupancyGrid, Odometry, Path
 from geometry_msgs.msg import PoseStamped
 import numpy as np
+from std_msgs.msg import Int32
 from vrx_navigation.search_algorithms import a_star 
 from scipy.spatial.transform import Rotation as R
 
@@ -24,7 +25,8 @@ class PathPlannerNode(Node):
         
         # Publisher to the PID controller
         self.goal_pub = self.create_publisher(PoseStamped, '/pid/goal', 10)
-        
+        self.path_pub = self.create_publisher(Path, '/planned_path', 10)
+        self.expanded_pub = self.create_publisher(Int32, '/expanded_nodes', 10) # NEW PUBLISHER
         # Timer for LOS logic
         self.create_timer(0.2, self.guidance_loop)
 
@@ -58,11 +60,27 @@ class PathPlannerNode(Node):
             # Use your A* logic (heuristic=0 for Manhattan)
             # Costs array of 1s as requested
             dummy_costs = np.ones_like(self.grid)
-            grid_path = a_star(self.grid, start_grid, goal_grid, dummy_costs, 0)
+            grid_path, expanded_count = a_star(self.grid, start_grid, goal_grid, dummy_costs, 0)
             
             if grid_path:
                 self.path = [self.grid_to_world(r, c) for r, c in grid_path]
                 self.get_logger().info(f"Path Planned: {len(self.path)} waypoints.")
+
+                exp_msg = Int32()
+                exp_msg.data = expanded_count
+                self.expanded_pub.publish(exp_msg)
+                
+                path_msg = Path()
+                path_msg.header.stamp = self.get_clock().now().to_msg()
+                path_msg.header.frame_id = 'odom'
+                
+                for wx, wy in self.path:
+                    pose = PoseStamped()
+                    pose.pose.position.x = float(wx)
+                    pose.pose.position.y = float(wy)
+                    path_msg.poses.append(pose)
+                
+                self.path_pub.publish(path_msg)
 
         # 2. LOS / Waypoint following logic
         if self.path and self.current_wp_idx < len(self.path):
