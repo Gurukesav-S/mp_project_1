@@ -98,7 +98,7 @@ def a_star(maze, start, goal, costs, heuristic):
     path = [] #this should contai list of nodes [start, (20,30), (21,30), ...., goal] as a path from start to goal
     "*** YOUR CODE HERE ***"
     fringe = PriorityQueue()
-    #closed_set = set()
+    closed_set = set()
     parent_dict = {start: None}
     g_cost = {start:0}
     h_start = get_heuristic(goal,start,heuristic)
@@ -113,13 +113,13 @@ def a_star(maze, start, goal, costs, heuristic):
                 path.append(curr)
                 curr = parent_dict[curr]
             path.reverse()
-            return path
+            return path, len(closed_set)
             
         # if current_node in closed_set:
         #     continue
         if current_g>g_cost[current_node]:
             continue
-        #closed_set.add(current_node)
+        closed_set.add(current_node)
         neighbours = get_neighbors(maze, current_node)
         
         for next_node in neighbours:
@@ -137,7 +137,7 @@ def a_star(maze, start, goal, costs, heuristic):
                 fringe.put((f_cost,new_g,next_node))   
         
                 
-    return path
+    return path, len(closed_set)
 ################################################################################################################################# 
 #Any oher functions you may want to define
 def get_heuristic(goal,node,heuristic):

@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 import time
-from nav_msgs.msg import OccupancyGrid
-from std_msgs.msg import Header
+from nav_msgs.msg import OccupancyGrid, Path
+from std_msgs.msg import Header, Int32 
 
 class VRXGridPlotter(Node):
     def __init__(self):
@@ -34,9 +34,12 @@ class VRXGridPlotter(Node):
         # ASV State Tracking
         self.path_x, self.path_y = [], []
         self.current_pos = [0.0, 0.0, 0.0] # x, y, yaw
+        self.planned_x, self.planned_y = [], []
+        self.expanded_nodes = 0
 
         self.create_subscription(Odometry, '/kf/odom', self.odom_callback, 10)
-        
+        self.create_subscription(Path, '/planned_path', self.path_callback, 10) 
+        self.create_subscription(Int32, '/expanded_nodes', self.expanded_callback, 10) # NEW SUBSCRIBER
         # Visualization Setup
         plt.ion()
         self.fig, self.ax = plt.subplots(figsize=(10, 7))
@@ -73,6 +76,13 @@ class VRXGridPlotter(Node):
         self.path_x.append(self.current_pos[0])
         self.path_y.append(self.current_pos[1])
 
+    def path_callback(self, msg):
+        self.planned_x = [pose.pose.position.x for pose in msg.poses]
+        self.planned_y = [pose.pose.position.y for pose in msg.poses]
+
+    def expanded_callback(self, msg):
+        self.expanded_nodes = msg.data 
+
     def update_plot(self):
         self.ax.clear()
         if self.current_pos != [0.0, 0.0, 0.0]:
@@ -90,7 +100,9 @@ class VRXGridPlotter(Node):
             self.ax.set_xticks(np.arange(0, extent[1] + 1, self.cell_size))
             self.ax.set_yticks(np.arange(0, extent[3] + 1, self.cell_size))
             self.ax.grid(which='both', color='gray', linestyle='-', linewidth=0.5)
-
+            if self.planned_x and self.planned_y:
+                self.ax.plot(self.planned_x, self.planned_y, 'g--', label='Planned A* Path', linewidth=2.5)
+                self.ax.plot(self.planned_x[-1], self.planned_y[-1], 'g*', markersize=15, label='Goal')
             # Plot Trajectory
             self.ax.plot(self.path_x, self.path_y, 'b-', label='Path', linewidth=1.5)
 
@@ -98,8 +110,8 @@ class VRXGridPlotter(Node):
             self.ax.quiver(self.current_pos[0], self.current_pos[1], 
                         np.cos(self.current_pos[2]), np.sin(self.current_pos[2]), 
                         color='red', scale=20, label='WAM-V')
-
-            self.ax.set_title(f"VRX Navigation (Cell Size: {self.cell_size}m)")
+            self.ax.set_title(f"VRX Navigation (Cell Size: {self.cell_size}m) | A* Nodes Expanded: {self.expanded_nodes}")
+            #self.ax.set_title(f"VRX Navigation (Cell Size: {self.cell_size}m)")
             self.ax.legend()
             plt.draw()
             plt.pause(0.01)
