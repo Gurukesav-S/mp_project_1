@@ -41,7 +41,7 @@ class PID(Node):
 
         # Distance thresholds (meters)
         self.th1 = 5.0   # far threshold
-        self.th2 = 1.0   # close threshold
+        self.th2 = 4.0   # close threshold
 
         self.create_subscription(Odometry, '/kf/odom', self.loc_callback, 10)
         self.create_subscription(PoseStamped, '/pid/goal', self.goal_enu_callback, 20)
@@ -156,7 +156,7 @@ class PID(Node):
             Mz = 0.0
             heading_tolerance = np.radians(10)
 
-            if abs(alpha) > heading_tolerance and dist > self.th2:
+            if abs(alpha) > heading_tolerance and dist > 5:
                 self.get_logger().info(f"Aligning Heading: alpha={np.degrees(alpha):.2f}")
                 # Use Alpha PID but keep Fd at 0.0
                 _, Mz = self.compute_forces(
@@ -168,7 +168,7 @@ class PID(Node):
             elif dist > self.th1:
                 Fd, Mz = self.compute_forces(
                     e_dist=dist, e_ang=alpha, e_ori=0.0,
-                    kp_d=3.0, kd_d=0.1, ki_d=0.0,
+                    kp_d=10.0, kd_d=1, ki_d=0.0,
                     kp_a=25.0, kd_a=10.0, ki_a=0.0
                 )
                 
