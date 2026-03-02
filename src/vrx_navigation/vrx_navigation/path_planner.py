@@ -4,7 +4,7 @@ from nav_msgs.msg import OccupancyGrid, Odometry, Path
 from geometry_msgs.msg import PoseStamped
 import numpy as np
 from std_msgs.msg import Int32
-from vrx_navigation.search_algorithms import a_star, i_dstar_lite, i_dstar_lite_2
+from vrx_navigation.search_algorithms import a_star, i_dstar_lite
 from scipy.spatial.transform import Rotation as R
 
 class PathPlannerNode(Node):
@@ -61,7 +61,7 @@ class PathPlannerNode(Node):
             # Costs array of 1s as requested
             dummy_costs = np.ones_like(self.grid)
             #grid_path, expanded_count = a_star(self.grid, start_grid, goal_grid, dummy_costs, 0)
-            grid_path, expanded_count = i_dstar_lite_2(self.grid, start_grid, goal_grid, dummy_costs, heuristic=2)
+            grid_path, expanded_count = i_dstar_lite(self.grid, start_grid, goal_grid)
             
             if grid_path:
                 self.path = [self.grid_to_world(r, c) for r, c in grid_path]

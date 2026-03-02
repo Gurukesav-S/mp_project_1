@@ -3,6 +3,9 @@ import random
 from queue import PriorityQueue, Queue
 import numpy as np
 import matplotlib.pyplot as plt
+import heapq
+import math
+INF = float('inf')
 
 ###############################        NOTES           ############################################################
 #1. Do not import an additional packages, read about the imported packages and learn to use them to solve to problem: Queue and PriorityQueue are the packages to use
@@ -151,30 +154,6 @@ def get_heuristic(goal,node,heuristic):
 #######################################
 #Improved D* Lite 
 
-def get_improved_neighbors(maze, node):
-    """
-    Increases moveable directions by allowing paths through 
-    grid boundaries (midpoints) and vertices[cite: 561, 568].
-    """
-    x, y = node
-    neighbors = []
-    # 8-way connectivity (Vertices) [cite: 559]
-    for dx in [-1, 0, 1]:
-        for dy in [-1, 0, 1]:
-            if dx == 0 and dy == 0: continue
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < maze.shape[0] and 0 <= ny < maze.shape[1] and maze[int(nx), int(ny)] == 0:
-                neighbors.append((nx, ny))
-    
-    # Boundary Midpoints (Interpolation points) [cite: 562, 567]
-    for dx, dy in [(-0.5, 0), (0.5, 0), (0, -0.5), (0, 0.5)]:
-        nx, ny = x + dx, y + dy
-        if 0 <= nx < maze.shape[0] and 0 <= ny < maze.shape[1]:
-            # Boundary is valid if the two cells sharing it are free [cite: 225]
-            if maze[int(nx-0.5), int(ny)] == 0 and maze[int(nx+0.5), int(ny)] == 0:
-                neighbors.append((nx, ny))
-    return neighbors
-
 def is_valid_turn(pred, curr, succ, max_angle=60):
     """
     Equation 14: Restricts the turning angle to avoid unfeasible paths[cite: 550, 554].
@@ -211,66 +190,25 @@ def get_idw_heuristic(goal, node, heuristic_type):
         total_w += weight
     return w_sum / total_w #[cite: 579]
 
-def i_dstar_lite(maze, start, goal, costs, heuristic):
-    """
-    Final Improved D* Lite implementation[cite: 108].
-    Combines path cost optimization, IDW, and motion constraints[cite: 112, 113].
-    """
-    path = []
-    fringe = PriorityQueue()
-    g_cost = {start: 0}
-    parent_dict = {start: None}
-    closed_set = set()
-
-    h_start = get_idw_heuristic(goal, start, heuristic)
-    fringe.put((h_start, 0, start))
-
-    while not fringe.empty():
-        f, g, current = fringe.get()
-
-        if current == goal:
-            curr = goal
-            while curr is not None:
-                path.append(curr)
-                curr = parent_dict.get(curr)
-            path.reverse()
-            return path, len(closed_set)
-
-        if g > g_cost.get(current, float('inf')):
-            continue
-        
-        closed_set.add(current)
-        for neighbor in get_improved_neighbors(maze, current):
-            # Check motion constraints 
-            if not is_valid_turn(parent_dict.get(current), current, neighbor):
-                continue
-
-            edge_cost = get_improved_edge_cost(current, neighbor) #[cite: 379]
-            new_g = g + edge_cost
-
-            if neighbor not in g_cost or new_g < g_cost[neighbor]:
-                g_cost[neighbor] = new_g
-                parent_dict[neighbor] = current
-                h = get_idw_heuristic(goal, neighbor, heuristic) #[cite: 579]
-                fringe.put((new_g + h, new_g, neighbor))
-
-    return path, len(closed_set)
 
 #############################
 def get_8way_neighbors(maze, node):
-    """
-    Implements 8-way connectivity (Horizontal, Vertical, and Diagonal).
-    Standard D* Lite often uses 4-way; the paper expands this to improve length.
-    """
-    x, y = int(node[0]), int(node[1])
+    rows, cols = maze.shape
+    r, c = node
+
+    directions = [
+        (-1, 0), (1, 0), (0, -1), (0, 1),
+        (-1, -1), (-1, 1), (1, -1), (1, 1)
+    ]
+
     neighbors = []
-    for dx in [-1, 0, 1]:
-        for dy in [-1, 0, 1]:
-            if dx == 0 and dy == 0: continue
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < maze.shape[0] and 0 <= ny < maze.shape[1]:
-                if maze[nx, ny] == 0: # 0 is assumed to be free space
-                    neighbors.append((nx, ny))
+
+    for dr, dc in directions:
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < rows and 0 <= nc < cols:
+            if maze[nr][nc] == 0:   # 0 = free
+                neighbors.append((nr, nc))
+
     return neighbors
 
 def get_improved_edge_cost(node, neighbor):
@@ -283,44 +221,117 @@ def get_improved_edge_cost(node, neighbor):
     dy = abs(node[1] - neighbor[1])
     return (np.sqrt(2) * min(dx, dy)) + (max(dx, dy) - min(dx, dy))
 
-def i_dstar_lite_2(maze, start, goal, costs, heuristic):
-    """
-    Improved D* Lite core using the paper's cost function.
-    """
-    path = []
-    fringe = PriorityQueue()
-    g_cost = {start: 0}
-    parent_dict = {start: None}
-    closed_set = set()
+def i_dstar_lite(maze, start, goal):
 
-    h_start = get_heuristic(goal, start, heuristic)
-    fringe.put((h_start, 0, start))
+    rows, cols = maze.shape
+    INF = float('inf')
 
-    while not fringe.empty():
-        f, g, current = fringe.get()
+    # ---------- Initialize g and rhs ----------
+    g = {}
+    rhs = {}
 
-        if current == goal:
-            curr = goal
-            while curr is not None:
-                path.append(curr)
-                curr = parent_dict.get(curr)
-            path.reverse()
-            return path, len(closed_set)
+    for r in range(rows):
+        for c in range(cols):
+            g[(r, c)] = INF
+            rhs[(r, c)] = INF
 
-        if g > g_cost.get(current, float('inf')):
-            continue
-        
-        closed_set.add(current)
-        
-        for neighbor in get_8way_neighbors(maze, current):
-            # Using Equation 13 instead of uniform costs
-            edge_cost = get_improved_edge_cost(current, neighbor)
-            new_g = g + edge_cost
+    rhs[goal] = 0
 
-            if neighbor not in g_cost or new_g < g_cost[neighbor]:
-                g_cost[neighbor] = new_g
-                parent_dict[neighbor] = current
-                h = get_heuristic(goal, neighbor, heuristic)
-                fringe.put((new_g + h, new_g, neighbor))
+    # ---------- Priority Queue ----------
+    U = []
+    k_m = 0
+    expansions = 0
 
-    return path, len(closed_set)
+    # ---------- Heuristic (Chebyshev) ----------
+    def heuristic_from_s(a, b):
+        dx = abs(a[0] - b[0])
+        dy = abs(a[1] - b[1])
+        return max(dx, dy)
+
+    # ---------- Key Calculation ----------
+    def calculateKey(s):
+        return (
+            min(g[s], rhs[s]) + heuristic_from_s(s, start) + k_m,
+            min(g[s], rhs[s])
+        )
+
+    # ---------- topKey ----------
+    def topKey():
+        if len(U) > 0:
+            return U[0][:2]
+        else:
+            return (INF, INF)
+
+    # ---------- updateVertex ----------
+    def updateVertex(u):
+        if u != goal:
+            min_rhs = INF
+            for s in get_8way_neighbors(maze, u):
+                min_rhs = min(
+                    min_rhs,
+                    g[s] + get_improved_edge_cost(u, s)
+                )
+            rhs[u] = min_rhs
+
+        # remove old instance if exists
+        for item in U:
+            if item[2] == u:
+                U.remove(item)
+                heapq.heapify(U)
+                break
+
+        if g[u] != rhs[u]:
+            heapq.heappush(U, calculateKey(u) + (u,))
+
+    # ---------- computeShortestPath ----------
+    def computeShortestPath():
+        nonlocal expansions
+
+        while (rhs[start] != g[start]) or (topKey() < calculateKey(start)):
+
+            k_old = topKey()
+            u = heapq.heappop(U)[2]
+
+            if k_old < calculateKey(u):
+                heapq.heappush(U, calculateKey(u) + (u,))
+            elif g[u] > rhs[u]:
+                g[u] = rhs[u]
+                expansions += 1
+                for s in get_8way_neighbors(maze, u):
+                    updateVertex(s)
+            else:
+                g[u] = INF
+                expansions += 1
+                updateVertex(u)
+                for s in get_8way_neighbors(maze, u):
+                    updateVertex(s)
+
+    # ---------- Initialize ----------
+    heapq.heappush(U, calculateKey(goal) + (goal,))
+    computeShortestPath()
+
+    # ---------- No Path ----------
+    if g[start] == INF:
+        return [], expansions
+
+    # ---------- Extract Path ----------
+    path = [start]
+    current = start
+
+    while current != goal:
+        min_cost = INF
+        next_node = None
+
+        for s in get_8way_neighbors(maze, current):
+            cost = g[s] + get_improved_edge_cost(current, s)
+            if cost < min_cost:
+                min_cost = cost
+                next_node = s
+
+        if next_node is None:
+            return [], expansions
+
+        current = next_node
+        path.append(current)
+
+    return path, expansions
