@@ -5,7 +5,7 @@ import math
 INF = float('inf')
 
 def heuristic(p1, p2):
-    # Euclidean distance
+    """Euclidean distance as used in the paper for accurate evaluation."""
     return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
 
 def get_8way_neighbors(maze, node):
@@ -14,47 +14,54 @@ def get_8way_neighbors(maze, node):
     rows, cols = maze.shape
     for dr in [-1, 0, 1]:
         for dc in [-1, 0, 1]:
-            if dr == 0 and dc == 0:
-                continue
+            if dr == 0 and dc == 0: continue
             nr, nc = r + dr, c + dc
             if 0 <= nr < rows and 0 <= nc < cols:
                 neighbors.append((nr, nc))
     return neighbors
 
-def cost(maze, u, v):
-    # If either cell is an obstacle, traversing is impossible
+def improved_cost(maze, u, v):
+    """Reflects Equation (13): 1.0 for straight, 1.414 for diagonal moves."""
     if maze[u] == 1 or maze[v] == 1:
         return INF
-    # Diagonal cost
-    if abs(u[0] - v[0]) == 1 and abs(u[1] - v[1]) == 1:
-        return 1.414
-    # Straight cost
-    return 1.0
+    dr = abs(u[0] - v[0])
+    dc = abs(u[1] - v[1])
+    return math.sqrt(2) * min(dr, dc) + abs(dr - dc)
 
-class DStarLitePlanner:
-    def __init__(self, maze, start, goal):
+def calculate_angle(s_pred, s_curr, s_succ):
+    """Reflects Equation (14) to limit expansion based on turning angle."""
+    if s_pred is None or s_pred == s_curr: return 0.0
+    v1 = (s_curr[0] - s_pred[0], s_curr[1] - s_pred[1])
+    v2 = (s_succ[0] - s_curr[0], s_succ[1] - s_curr[1])
+    dot = v1[0]*v2[0] + v1[1]*v2[1]
+    mag1 = math.hypot(*v1)
+    mag2 = math.hypot(*v2)
+    if mag1 == 0 or mag2 == 0: return 0.0
+    cos_phi = max(-1, min(1, dot / (mag1 * mag2)))
+    return math.acos(cos_phi)
+
+class ImprovedDStarLite:
+    def __init__(self, maze, start, goal, phi_max=math.radians(135)):
         self.maze = np.copy(maze)
         self.s_start = start
         self.s_goal = goal
         self.s_last = start
+        self.phi_max = phi_max
         self.k_m = 0.0
         
-        self.U = []          # Priority Queue
-        self.U_dict = {}     # Fast lookup for queue states
+        self.U = []
+        self.U_dict = {}
         self.g = {}
         self.rhs = {}
+        self.preds = {} 
         self.expansions = 0
         
-        # D* Lite searches BACKWARDS. The goal is the root of the tree.
         self.rhs[self.s_goal] = 0.0
         self.insert_U(self.s_goal, self.calculate_key(self.s_goal))
         self.compute_shortest_path()
 
-    def get_g(self, s):
-        return self.g.get(s, INF)
-
-    def get_rhs(self, s):
-        return self.rhs.get(s, INF)
+    def get_g(self, s): return self.g.get(s, INF)
+    def get_rhs(self, s): return self.rhs.get(s, INF)
 
     def calculate_key(self, s):
         g_rhs = min(self.get_g(s), self.get_rhs(s))
@@ -65,59 +72,41 @@ class DStarLitePlanner:
         heapq.heappush(self.U, (key[0], key[1], s))
 
     def remove_U(self, s):
-        if s in self.U_dict:
-            del self.U_dict[s]
-
-    def top_key(self):
-        # Lazy deletion for priority queue
-        while self.U:
-            k1, k2, s = self.U[0]
-            if self.U_dict.get(s) == (k1, k2):
-                return (k1, k2)
-            else:
-                heapq.heappop(self.U)
-        return (INF, INF)
-
-    def pop_U(self):
-        while self.U:
-            k1, k2, s = heapq.heappop(self.U)
-            if self.U_dict.get(s) == (k1, k2):
-                del self.U_dict[s]
-                return (k1, k2), s
-        return (INF, INF), None
+        if s in self.U_dict: del self.U_dict[s]
 
     def update_vertex(self, u):
-        # Determine inconsistency for non-goal nodes based on neighbors
         if u != self.s_goal:
             min_rhs = INF
+            best_neighbor = None
             for s_prime in get_8way_neighbors(self.maze, u):
-                min_rhs = min(min_rhs, cost(self.maze, u, s_prime) + self.get_g(s_prime))
+                angle = calculate_angle(self.preds.get(s_prime), s_prime, u)
+                if angle > self.phi_max: continue
+                
+                current_rhs = improved_cost(self.maze, u, s_prime) + self.get_g(s_prime)
+                if current_rhs < min_rhs:
+                    min_rhs = current_rhs
+                    best_neighbor = s_prime
             self.rhs[u] = min_rhs
+            if best_neighbor: self.preds[u] = best_neighbor
         
         self.remove_U(u)
-        
-        # If node is inconsistent, add it to queue for repair
         if self.get_g(u) != self.get_rhs(u):
             self.insert_U(u, self.calculate_key(u))
 
     def compute_shortest_path(self):
         while True:
-            k_old = self.top_key()
+            if not self.U: break
+            k_old = self.U[0][:2]
             k_start = self.calculate_key(self.s_start)
-            
             if k_old >= k_start and self.get_rhs(self.s_start) == self.get_g(self.s_start):
                 break
             
-            k_old_popped, u = self.pop_U()
-            if u is None:
-                break
-                
+            _, _, u = heapq.heappop(self.U)
+            if u not in self.U_dict: continue
+            del self.U_dict[u]
             self.expansions += 1
-            k_new = self.calculate_key(u)
             
-            if k_old_popped < k_new:
-                self.insert_U(u, k_new)
-            elif self.get_g(u) > self.get_rhs(u):
+            if self.get_g(u) > self.get_rhs(u):
                 self.g[u] = self.get_rhs(u)
                 for s in get_8way_neighbors(self.maze, u):
                     self.update_vertex(s)
@@ -127,200 +116,28 @@ class DStarLitePlanner:
                 for s in get_8way_neighbors(self.maze, u):
                     self.update_vertex(s)
 
-    def update_map(self, new_maze, current_start, changed_cells):
-        # Update heuristic modifier because the ASV has physically moved
-        self.k_m += heuristic(self.s_last, current_start)
-        self.s_last = current_start
-        self.s_start = current_start
+    def extract_path(self, start_node=None):
+        curr = start_node if start_node is not None else self.s_start
+        if self.get_g(curr) == INF:
+            return [], self.expansions
+        path = [curr]
+        while curr != self.s_goal:
+            neighbors = get_8way_neighbors(self.maze, curr)
+            curr = min(neighbors, key=lambda s: improved_cost(self.maze, curr, s) + self.get_g(s))
+            if curr in path: break 
+            path.append(curr)
+        return path, self.expansions
+
+    def update_map(self, new_maze, current_pos, changed_cells):
+        self.k_m += heuristic(self.s_last, current_pos)
+        self.s_last = current_pos
+        self.s_start = current_pos
+        self.maze = np.copy(new_maze) # Update internal map with the one from ROS
         
-        # Update ONLY the broken edges
         for (r, c) in changed_cells:
             u = (r, c)
-            self.maze[r, c] = new_maze[r, c]
             self.update_vertex(u)
             for s in get_8way_neighbors(self.maze, u):
                 self.update_vertex(s)
-                
-        # Repair the tree (Lightning fast!)
+        
         self.compute_shortest_path()
-
-    def extract_path(self, start_node):
-        # If g is infinity, we are completely walled off
-        if self.get_g(start_node) == INF:
-            return [], self.expansions
-            
-        path = [start_node]
-        current = start_node
-        
-        # Follow the "gravity well" of lowest G costs down to the goal
-        for _ in range(self.maze.size): 
-            if current == self.s_goal:
-                break
-            min_cost = INF
-            next_node = None
-            for s in get_8way_neighbors(self.maze, current):
-                c = cost(self.maze, current, s) + self.get_g(s)
-                if c < min_cost:
-                    min_cost = c
-                    next_node = s
-            
-            if next_node is None or min_cost == INF:
-                return [], self.expansions
-                
-            current = next_node
-            path.append(current)
-            
-        return path, self.expansions
-
-
-
-
-# #DO NOT MODIFY FOR HERE
-# import random
-# from queue import PriorityQueue, Queue
-# import numpy as np
-# import matplotlib.pyplot as plt
-
-# ###############################        NOTES           ############################################################
-# #1. Do not import an additional packages, read about the imported packages and learn to use them to solve to problem: Queue and PriorityQueue are the packages to use
-# #2. Stack is readily available data type in python if you need to use it
-# #3. Only when you run the code you will see GUI output, however when evaluating it will not show GUI, it will show path calcualted by your algorithm and corrct path if your path is not correct.
-# #4. You can add any number of additional functions that you can call from already defined functions below
-# #5. DO NOT MODIFY name, arguments or the return type othrwise your code will not get auto evaluated
-
-# #*HINT: may be satrt from UCS implemntatio from the last assignment
-
-# #################################################################################################################################
-
-# #This fuction is not mandetory to use, you can consider unit edge cost for all the actions/nodes, but if you want to consider non-uniform edge cost you can call this function
-# #Arguments:
-# # 1. costs: contains cost between a given node and its neighbor
-# # 2. node: this is the coordInate of the current node givn as [x,y]
-# # 3. neighbor: this is the coordinate of the neighbor node givn as [x,y]
-
-# # Returns: cost to go from the node to the neighbour
-
-# def get_edge_cost(costs, node, neighbor):
-#     nx, ny = node
-#     return costs[nx, ny]
-
-# #################################################################################################################################
-
-# #This function returns all valid neighbours given the maze and the node
-
-# #Arguments:
-# # 1. maze: this is the search space of size X (rows) x Y (columns), its a numpy array of size X rows and Y columns
-# # 2. node: this is the coordinate of the current node givn as [x,y]
-
-# # Returns: all the neighbors to be added to the Queue or Prioity queue
-
-# #Note: Put the neighbours in the Stack/Queue in same order as they are returned from this function while maintaining the correct priority
-# def get_neighbors(maze, node):
-#     x, y = node
-#     neighbors = []
-#     for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-#         nx, ny = x + dx, y + dy
-#         if 0 <= nx < maze.shape[0] and 0 <= ny < maze.shape[1] and maze[nx, ny] == 0:
-#             neighbors.append((nx, ny))
-#     return neighbors
-
-# ################################################################################################################################# TO HERE
-
-# #MODIFY CONTENT FROM THIS LINE ONWARDS HOWEVER DO NOT MODIFY FUNCTION NAMES ARGUMENTS OR RETURN TYPE
-
-# #This function returns manhattan distance between the goal state and the current state
-
-# #Arguments:
-# # 1. goal: goal state as provided to the function "a_star" below
-# # 2. node: this is the coordinate of the current node givn as [x,y] for which you want to calcuate the manhattan heuristic
-
-# # Returns: manhattan distance between the goal and the node passed as arguments
-# def manhattan_heuristice(goal, node):
-#     distance = 0 #update this variable and return the calcuated/updated value
-
-#     "*** YOUR CODE HERE ***"
-#     distance = abs(goal[0]-node[0])+abs(goal[1]-node[1])
-#     return distance
-
-# #################################################################################################################################
-
-# #This function returns euclidean distance between the goal state and the current state
-
-# #Arguments:
-# # 1. goal: goal state as provided to the function "a_star" below
-# # 2. node: this is the coordinate of the current node givn as [x,y] for which you want to calcuate the euclidean heuristic
-
-# # Returns: euclidean distance between the goal and the node passed as arguments
-# def euclidean_heuristic(goal, node):
-#     distance = 0 #update this variable and return the calcuated/updated value
-
-#     "*** YOUR CODE HERE ***"
-#     distance = np.sqrt((goal[0]-node[0])**2+(goal[1]-node[1])**2)
-#     return distance
-
-# #This function should implement a_star algorithm with 3 different heurstics, the choice of the heuristic is passed as an argument
-
-# #Arguments:
-# # 1. maze: this is the search space of size X (rows) x Y (columns), its a numpy array of size X rows and Y columns
-# # 2. start: coordinate of the start node givn as [x,y]
-# # 3. goal: coordinate of the goal node givn as [x,y]
-# # 4. costs: if you choose to use non-uniform dge costs you can call get_edge_cost() with appropriate arguments just like how you used it in assignmet 1 UCS implementation
-# # 5. heuristic: if heuristic=0 use Manhattan Distance heuristic
-# #               if heuristic=1 use Euclidean Distance heuristic
-# #               if heuristic>=2 use weighted heuristic with manhattan distance, so calcuated heuristic value should be "heuristic * manhattan_heuristice(goal, node)".
-# # Return values
-# # 1. a list of nodes containng path from START to GOAL, rememebr the first node in this list should be START and the last one should be GOAL
-
-# def a_star(maze, start, goal, costs, heuristic):
-#     path = [] #this should contai list of nodes [start, (20,30), (21,30), ...., goal] as a path from start to goal
-#     "*** YOUR CODE HERE ***"
-#     fringe = PriorityQueue()
-#     closed_set = set()
-#     parent_dict = {start: None}
-#     g_cost = {start:0}
-#     h_start = get_heuristic(goal,start,heuristic)
-#     fringe.put((h_start,0,start))   #(g+h,g,node)
-    
-#     while not fringe.empty():
-#         current_f,current_g,current_node = fringe.get()
-        
-#         if current_node == goal:
-#             curr = goal
-#             while curr is not None:
-#                 path.append(curr)
-#                 curr = parent_dict[curr]
-#             path.reverse()
-#             return path, len(closed_set)
-            
-#         # if current_node in closed_set:
-#         #     continue
-#         if current_g>g_cost[current_node]:
-#             continue
-#         closed_set.add(current_node)
-#         neighbours = get_neighbors(maze, current_node)
-        
-#         for next_node in neighbours:
-#             # if next_node in closed_set:
-#             #     continue
-            
-#             edge_cost = 1 #get_edge_cost(costs,current_node,next_node)
-#             new_g = g_cost[current_node] + edge_cost
-            
-#             if next_node not in g_cost or new_g < g_cost[next_node]:
-#                 g_cost[next_node] = new_g
-#                 parent_dict[next_node] = current_node
-#                 h_cost = get_heuristic(goal,next_node,heuristic)
-#                 f_cost = new_g +h_cost
-#                 fringe.put((f_cost,new_g,next_node))   
-        
-                
-#     return path, len(closed_set)
-# ################################################################################################################################# 
-# #Any oher functions you may want to define
-# def get_heuristic(goal,node,heuristic):
-#     if heuristic == 0 :
-#         return manhattan_heuristice(goal,node)
-#     elif heuristic == 1:
-#         return euclidean_heuristic(goal,node)
-#     elif heuristic >=2:
-#         return heuristic * manhattan_heuristice(goal,node)

@@ -4,7 +4,7 @@ from nav_msgs.msg import OccupancyGrid, Odometry, Path
 from geometry_msgs.msg import PoseStamped
 import numpy as np
 from std_msgs.msg import Int32
-from vrx_navigation.search_algorithms import DStarLitePlanner 
+from vrx_navigation.search_algorithms import ImprovedDStarLite
 from scipy.spatial.transform import Rotation as R
 import time
 
@@ -120,7 +120,8 @@ class PathPlannerNode(Node):
         # 1. INITIALIZE D* LITE ONCE
         if self.planner is None:
             self.get_logger().info("Initializing Persistent D* Lite Planner...")
-            self.planner = DStarLitePlanner(self.grid, start_grid, goal_grid)
+            #self.planner = DStarLitePlanner(self.grid, start_grid, goal_grid)
+            self.planner = ImprovedDStarLite(self.grid, start_grid, goal_grid)
             grid_path, exp = self.planner.extract_path(start_grid)
             self.publish_planned_path(grid_path, exp)
             return
