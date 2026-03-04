@@ -1,0 +1,27 @@
+running egg_info
+writing ../../build/vrx_navigation/vrx_navigation.egg-info/PKG-INFO
+writing dependency_links to ../../build/vrx_navigation/vrx_navigation.egg-info/dependency_links.txt
+writing entry points to ../../build/vrx_navigation/vrx_navigation.egg-info/entry_points.txt
+writing requirements to ../../build/vrx_navigation/vrx_navigation.egg-info/requires.txt
+writing top-level names to ../../build/vrx_navigation/vrx_navigation.egg-info/top_level.txt
+reading manifest file '../../build/vrx_navigation/vrx_navigation.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file '../../build/vrx_navigation/vrx_navigation.egg-info/SOURCES.txt'
+running build
+running build_py
+copying vrx_navigation/map.py -> /home/barbie/dynamic_dstar/build/vrx_navigation/build/lib/vrx_navigation
+running install
+running install_lib
+copying /home/barbie/dynamic_dstar/build/vrx_navigation/build/lib/vrx_navigation/map.py -> /home/barbie/dynamic_dstar/install/vrx_navigation/lib/python3.12/site-packages/vrx_navigation
+byte-compiling /home/barbie/dynamic_dstar/install/vrx_navigation/lib/python3.12/site-packages/vrx_navigation/map.py to map.cpython-312.pyc
+running install_data
+running install_egg_info
+removing '/home/barbie/dynamic_dstar/install/vrx_navigation/lib/python3.12/site-packages/vrx_navigation-0.0.0-py3.12.egg-info' (and everything under it)
+Copying ../../build/vrx_navigation/vrx_navigation.egg-info to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/python3.12/site-packages/vrx_navigation-0.0.0-py3.12.egg-info
+running install_scripts
+Installing kinematics_filter script to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/vrx_navigation
+Installing los_guidance script to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/vrx_navigation
+Installing map_viz script to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/vrx_navigation
+Installing path_planner script to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/vrx_navigation
+Installing pid_controller script to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/vrx_navigation
+writing list of installed files to '/home/barbie/dynamic_dstar/build/vrx_navigation/install.log'

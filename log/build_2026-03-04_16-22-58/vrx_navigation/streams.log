@@ -1,0 +1,29 @@
+[0.691s] Invoking command in '/home/barbie/dynamic_dstar/src/vrx_navigation': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/barbie/dynamic_dstar/build/vrx_navigation/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/barbie/dynamic_dstar/install/vrx_navigation/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/vrx_navigation build --build-base /home/barbie/dynamic_dstar/build/vrx_navigation/build install --record /home/barbie/dynamic_dstar/build/vrx_navigation/install.log --single-version-externally-managed install_data
+[0.957s] running egg_info
+[0.971s] writing ../../build/vrx_navigation/vrx_navigation.egg-info/PKG-INFO
+[0.971s] writing dependency_links to ../../build/vrx_navigation/vrx_navigation.egg-info/dependency_links.txt
+[0.971s] writing entry points to ../../build/vrx_navigation/vrx_navigation.egg-info/entry_points.txt
+[0.971s] writing requirements to ../../build/vrx_navigation/vrx_navigation.egg-info/requires.txt
+[0.971s] writing top-level names to ../../build/vrx_navigation/vrx_navigation.egg-info/top_level.txt
+[0.999s] reading manifest file '../../build/vrx_navigation/vrx_navigation.egg-info/SOURCES.txt'
+[0.999s] adding license file 'LICENSE'
+[1.000s] writing manifest file '../../build/vrx_navigation/vrx_navigation.egg-info/SOURCES.txt'
+[1.000s] running build
+[1.000s] running build_py
+[1.001s] copying vrx_navigation/path_planner.py -> /home/barbie/dynamic_dstar/build/vrx_navigation/build/lib/vrx_navigation
+[1.001s] running install
+[1.006s] running install_lib
+[1.020s] copying /home/barbie/dynamic_dstar/build/vrx_navigation/build/lib/vrx_navigation/path_planner.py -> /home/barbie/dynamic_dstar/install/vrx_navigation/lib/python3.12/site-packages/vrx_navigation
+[1.021s] byte-compiling /home/barbie/dynamic_dstar/install/vrx_navigation/lib/python3.12/site-packages/vrx_navigation/path_planner.py to path_planner.cpython-312.pyc
+[1.023s] running install_data
+[1.023s] running install_egg_info
+[1.039s] removing '/home/barbie/dynamic_dstar/install/vrx_navigation/lib/python3.12/site-packages/vrx_navigation-0.0.0-py3.12.egg-info' (and everything under it)
+[1.039s] Copying ../../build/vrx_navigation/vrx_navigation.egg-info to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/python3.12/site-packages/vrx_navigation-0.0.0-py3.12.egg-info
+[1.040s] running install_scripts
+[1.164s] Installing kinematics_filter script to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/vrx_navigation
+[1.164s] Installing los_guidance script to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/vrx_navigation
+[1.164s] Installing map_viz script to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/vrx_navigation
+[1.164s] Installing path_planner script to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/vrx_navigation
+[1.164s] Installing pid_controller script to /home/barbie/dynamic_dstar/install/vrx_navigation/lib/vrx_navigation
+[1.164s] writing list of installed files to '/home/barbie/dynamic_dstar/build/vrx_navigation/install.log'
+[1.195s] Invoked command in '/home/barbie/dynamic_dstar/src/vrx_navigation' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/barbie/dynamic_dstar/build/vrx_navigation/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/barbie/dynamic_dstar/install/vrx_navigation/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/vrx_navigation build --build-base /home/barbie/dynamic_dstar/build/vrx_navigation/build install --record /home/barbie/dynamic_dstar/build/vrx_navigation/install.log --single-version-externally-managed install_data
