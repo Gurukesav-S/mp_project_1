@@ -10,50 +10,50 @@ def heuristic(p1, p2):
     dy = abs(p1[1] - p2[1])
     return 1.0 * (dx + dy) + (math.sqrt(2) - 2.0) * min(dx, dy)
 
-def get_8way_neighbors(maze, node):
-    neighbors = []
-    r, c = node
-    rows, cols = maze.shape
-    
-    for dr in [-1, 0, 1]:
-        for dc in [-1, 0, 1]:
-            if dr == 0 and dc == 0:
-                continue
-            
-            nr = r + dr
-            nc = c + dc
-            
-            # 1. Basic boundary check
-            if 0 <= nr < rows and 0 <= nc < cols:
-                # 2. Check if the target neighbor itself is an obstacle
-                if maze[nr, nc] == 1:
-                    continue
-                
-                # 3. CORNER CUTTING PREVENTION:
-                # If this is a diagonal move, check the two side-cells.
-                # If either 'side' is an obstacle, do not allow the diagonal path.
-                if abs(dr) == 1 and abs(dc) == 1:
-                    # Side-cell 1: (r + dr, c)
-                    # Side-cell 2: (r, c + dc)
-                    if maze[r + dr, c] == 1 or maze[r, c + dc] == 1:
-                        continue # Skip this diagonal neighbor
-                
-                neighbors.append((nr, nc))
-    return neighbors
-
 # def get_8way_neighbors(maze, node):
 #     neighbors = []
 #     r, c = node
 #     rows, cols = maze.shape
+    
 #     for dr in [-1, 0, 1]:
 #         for dc in [-1, 0, 1]:
 #             if dr == 0 and dc == 0:
 #                 continue
+            
 #             nr = r + dr
 #             nc = c + dc
+            
+#             # 1. Basic boundary check
 #             if 0 <= nr < rows and 0 <= nc < cols:
+#                 # 2. Check if the target neighbor itself is an obstacle
+#                 if maze[nr, nc] == 1:
+#                     continue
+                
+#                 # 3. CORNER CUTTING PREVENTION:
+#                 # If this is a diagonal move, check the two side-cells.
+#                 # If either 'side' is an obstacle, do not allow the diagonal path.
+#                 if abs(dr) == 1 and abs(dc) == 1:
+#                     # Side-cell 1: (r + dr, c)
+#                     # Side-cell 2: (r, c + dc)
+#                     if maze[r + dr, c] == 1 or maze[r, c + dc] == 1:
+#                         continue # Skip this diagonal neighbor
+                
 #                 neighbors.append((nr, nc))
 #     return neighbors
+
+def get_8way_neighbors(maze, node):
+    neighbors = []
+    r, c = node
+    rows, cols = maze.shape
+    for dr in [-1, 0, 1]:
+        for dc in [-1, 0, 1]:
+            if dr == 0 and dc == 0:
+                continue
+            nr = r + dr
+            nc = c + dc
+            if 0 <= nr < rows and 0 <= nc < cols:
+                neighbors.append((nr, nc))
+    return neighbors
 
 def cost(maze, u, v):
     if maze[u] == 1 or maze[v] == 1:

@@ -89,8 +89,29 @@ class PathPlannerNode(Node):
             empty_path.header.frame_id = 'odom'
             self.path_pub.publish(empty_path)
             return
+        
+        # --- SIMPLE BRESENHAM PATH SMOOTHING ---
+        smoothed_path = [grid_path[0]]
+        current_idx = 0
+        
+        while current_idx < len(grid_path) - 1:
+            furthest_visible_idx = current_idx + 1
+            # Look as far ahead as possible
+            for j in range(len(grid_path) - 1, current_idx, -1):
+                r0, c0 = grid_path[current_idx]
+                r1, c1 = grid_path[j]
+                
+                # Using the simple Bresenham function
+                if self.is_line_of_sight_clear_simple(r0, c0, r1, c1):
+                    furthest_visible_idx = j
+                    break
+            
+            smoothed_path.append(grid_path[furthest_visible_idx])
+            current_idx = furthest_visible_idx
+        # ----------------------------------------
 
-        self.path = [self.grid_to_world(r, c) for r, c in grid_path]
+        self.path = [self.grid_to_world(r, c) for r, c in smoothed_path]
+        #self.path = [self.grid_to_world(r, c) for r, c in grid_path]
         self.current_wp_idx = 1 if len(self.path) > 1 else 0
         
         path_msg = Path()
@@ -102,6 +123,89 @@ class PathPlannerNode(Node):
             pose.pose.position.y = float(wy)
             path_msg.poses.append(pose)
         self.path_pub.publish(path_msg)
+
+    def is_line_of_sight_clear(self, r0, c0, r1, c1):
+        """
+        Supercover Bresenham / Raycast. 
+        Returns True if the straight line between (r0, c0) and (r1, c1) is free of obstacles.
+        """
+        dr = abs(r1 - r0)
+        dc = abs(c1 - c0)
+        r = r0
+        c = c0
+        n = 1 + dr + dc
+        r_inc = 1 if r1 > r0 else -1
+        c_inc = 1 if c1 > c0 else -1
+        error = dr - dc
+        dr *= 2
+        dc *= 2
+
+        # --- THE FIX: Safe checking helper to prevent out-of-bounds crashes ---
+        def is_wall(check_r, check_c):
+            if 0 <= check_r < self.grid.shape[0] and 0 <= check_c < self.grid.shape[1]:
+                return self.grid[check_r, check_c] == 1
+            return False 
+        # ----------------------------------------------------------------------
+
+        for _ in range(n):
+            if not (0 <= r < self.grid.shape[0] and 0 <= c < self.grid.shape[1]):
+                return False # Main line went out of bounds
+            if self.grid[r, c] == 1:
+                return False # Hit an obstacle
+                
+            # CORNER CHECK: Using the safe is_wall helper
+            if error > 0:
+                if is_wall(r, c - c_inc) or is_wall(r + r_inc, c):
+                    return False
+                r += r_inc
+                error -= dc
+            elif error < 0:
+                if is_wall(r - r_inc, c) or is_wall(r, c + c_inc):
+                    return False
+                c += c_inc
+                error += dr
+            else: # error == 0
+                if is_wall(r + r_inc, c) or is_wall(r, c + c_inc):
+                    return False
+                r += r_inc
+                c += c_inc
+                error -= dc
+                error += dr
+                n -= 1 # We took a diagonal step, so reduce total steps
+                
+        return True
+    
+    def is_line_of_sight_clear_simple(self, r0, c0, r1, c1):
+        """
+        Standard Bresenham Line Algorithm.
+        Allows diagonal corner-cutting between obstacles.
+        """
+        dr = abs(r1 - r0)
+        dc = abs(c1 - c0)
+        step_r = 1 if r0 < r1 else -1
+        step_c = 1 if c0 < c1 else -1
+        err = dr - dc
+
+        while True:
+            # Out of bounds check
+            if not (0 <= r0 < self.grid.shape[0] and 0 <= c0 < self.grid.shape[1]):
+                return False
+            
+            # Obstacle check
+            if self.grid[r0, c0] == 1:
+                return False
+                
+            # Reached the target
+            if r0 == r1 and c0 == c1:
+                return True
+                
+            e2 = 2 * err
+            if e2 > -dc:
+                err -= dc
+                r0 += step_r
+            if e2 < dr:
+                err += dr
+                c0 += step_c
 
     def calculate_los(self, prev_wp, current_wp, current_pos):
         x1, y1 = prev_wp[0], prev_wp[1]
