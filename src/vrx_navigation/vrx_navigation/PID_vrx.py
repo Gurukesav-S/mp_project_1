@@ -169,7 +169,7 @@ class PID(Node):
                 Fd, Mz = self.compute_forces(
                     e_dist=dist, e_ang=alpha, e_ori=0.0,
                     kp_d=10.0, kd_d=1, ki_d=0.0,
-                    kp_a=25.0, kd_a=10.0, ki_a=0.0
+                    kp_a=50.0, kd_a=10.0, ki_a=0.0
                 )
                 
             elif dist > self.th2:
