@@ -64,7 +64,7 @@ class PID(Node):
         self.goal_y = goal.pose.position.y
         goal_orientation = [goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w]
         self.goal_yaw = R.from_quat(goal_orientation).as_euler('xyz')[2]
-        self.get_logger().info(f"LOS got goal: x={self.goal_x:.2f}, y={self.goal_y:.2f} yaw:{self.goal_yaw:.2f}")
+        #self.get_logger().info(f"LOS got goal: x={self.goal_x:.2f}, y={self.goal_y:.2f} yaw:{self.goal_yaw:.2f}")
         
     def loc_callback(self, msg):
         self.GCS_x = msg.pose.pose.position.x
@@ -76,7 +76,7 @@ class PID(Node):
     def final_goal_callback(self, msg):
         # Update final goal flag
         self.finalgoal_reached = msg.data
-        self.get_logger().info(f"Final goal flag: {self.finalgoal_reached}")
+        #self.get_logger().info(f"Final goal flag: {self.finalgoal_reached}")
 
     def allocate_forces_to_thrusters(self, force_local_x, moment_local_z):
         TA = np.array([[1.0,1.0],  
@@ -142,7 +142,7 @@ class PID(Node):
     def pid(self):
         if self.finalgoal_reached:
             self.publish_thrust(0.0, 0.0)
-            self.get_logger().info('In final goal: thrusters set to zero')
+            #self.get_logger().info('In final goal: thrusters set to zero')
             return
         else:
             dx = np.around(self.goal_x - self.GCS_x, 2)
@@ -157,7 +157,7 @@ class PID(Node):
             heading_tolerance = np.radians(10)
 
             if abs(alpha) > heading_tolerance and dist > 5:
-                self.get_logger().info(f"Aligning Heading: alpha={np.degrees(alpha):.2f}")
+                #self.get_logger().info(f"Aligning Heading: alpha={np.degrees(alpha):.2f}")
                 # Use Alpha PID but keep Fd at 0.0
                 _, Mz = self.compute_forces(
                     e_dist=0.0, e_ang=alpha, e_ori=0.0,
@@ -187,7 +187,7 @@ class PID(Node):
                     e_dist=0.0, e_ang=0.0, e_ori=ori_err,
                     kp_o=50.0, kd_o=100.0, ki_o=0.0
                     )
-                self.get_logger().info(f"ori_error:{self.oe}")
+                #self.get_logger().info(f"ori_error:{self.oe}")
 
             thrusts = self.allocate_forces_to_thrusters(Fd, Mz)
             thrust_left = thrusts[0]*50
@@ -197,7 +197,7 @@ class PID(Node):
 
             self.publish_thrust(thrust_left, thrust_right)
 
-            self.get_logger().info(f"Thrust left :{thrust_left}| Thrust right: {thrust_right}")
+            #self.get_logger().info(f"Thrust left :{thrust_left}| Thrust right: {thrust_right}")
             
 def main(args=None):
     rclpy.init(args=args)
