@@ -170,7 +170,7 @@ class VRXGridPlotter(Node):
             self.grid_map = self.grid_map_inv[::-1]
             
         if self.is_dynamic:
-            self.create_timer(5.0, self.update_dynamic_obstacles) 
+            self.create_timer(50.0, self.update_dynamic_obstacles) 
 
         self.path_x, self.path_y = [], []
         self.current_pos = None 
@@ -287,13 +287,13 @@ class VRXGridPlotter(Node):
             
             # --- NEW: Plot both paths ---
             if self.raw_planned_x and self.raw_planned_y:
-                self.ax.plot(self.raw_planned_x, self.raw_planned_y, 'm:', label='Raw Grid Path', linewidth=2)
+                self.ax.plot(self.raw_planned_x, self.raw_planned_y, 'm:', label='Raw A* Path', linewidth=2)
             if self.planned_x and self.planned_y:
-                self.ax.plot(self.planned_x, self.planned_y, 'g--', label='Smoothed A* Path', linewidth=2.5)
+                self.ax.plot(self.planned_x, self.planned_y, 'g--', label='A* Path with Bresenham', linewidth=2.5)
                 
             goal_world_x = self.goal_grid[1] * self.cell_size + self.offset
             goal_world_y = self.goal_grid[0] * self.cell_size + self.offset
-            self.ax.plot(goal_world_x, goal_world_y, 'g*', markersize=15, label='Actual Final Goal')
+            self.ax.plot(goal_world_x, goal_world_y, 'g*', markersize=15, label='Goal')
                 
             self.ax.plot(self.path_x, self.path_y, 'b-', label='Path', linewidth=1.5)
             self.ax.quiver(self.current_pos[0], self.current_pos[1], 
@@ -302,7 +302,7 @@ class VRXGridPlotter(Node):
                         
             # --- NEW: Title shows both Current and Total Expansions ---
             mode = "Hardcoded" if self.is_hardcoded else "Random"
-            self.ax.set_title(f"A* ({mode}) | Cur Exp: {self.expanded_nodes} | Tot Exp: {self.total_expanded_nodes}")
+            self.ax.set_title(f"A* | Cur Exp: {self.expanded_nodes} | Tot Exp: {self.total_expanded_nodes}")
             self.ax.legend()
             plt.draw()
             plt.pause(0.01)
