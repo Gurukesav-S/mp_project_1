@@ -14,6 +14,25 @@ def cost(maze, u, v):
         return 1.41421 
     return 1.0
 
+# def get_8way_neighbors(maze, node):
+#     neighbors = []
+#     r, c = node
+#     rows, cols = maze.shape
+#     for dr in [-1, 0, 1]:
+#         for dc in [-1, 0, 1]:
+#             if dr == 0 and dc == 0:
+#                 continue
+#             nr, nc = r + dr, c + dc
+#             if 0 <= nr < rows and 0 <= nc < cols:
+#                 if maze[nr, nc] == 1:
+#                     continue
+#                 # Corner cutting prevention
+#                 if abs(dr) == 1 and abs(dc) == 1:
+#                     if maze[r + dr, c] == 1 or maze[r, c + dc] == 1:
+#                         continue 
+#                 neighbors.append((nr, nc))
+#     return neighbors
+
 def get_8way_neighbors(maze, node):
     neighbors = []
     r, c = node
@@ -24,27 +43,8 @@ def get_8way_neighbors(maze, node):
                 continue
             nr, nc = r + dr, c + dc
             if 0 <= nr < rows and 0 <= nc < cols:
-                if maze[nr, nc] == 1:
-                    continue
-                # Corner cutting prevention
-                if abs(dr) == 1 and abs(dc) == 1:
-                    if maze[r + dr, c] == 1 or maze[r, c + dc] == 1:
-                        continue 
                 neighbors.append((nr, nc))
     return neighbors
-
-# def get_8way_neighbors_simple(maze, node):
-#     neighbors = []
-#     r, c = node
-#     rows, cols = maze.shape
-#     for dr in [-1, 0, 1]:
-#         for dc in [-1, 0, 1]:
-#             if dr == 0 and dc == 0:
-#                 continue
-#             nr, nc = r + dr, c + dc
-#             if 0 <= nr < rows and 0 <= nc < cols:
-#                 neighbors.append((nr, nc))
-#     return neighbors
 # -----------------------------
 
 def get_edge_cost(costs, node, neighbor):

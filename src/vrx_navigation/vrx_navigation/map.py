@@ -170,7 +170,7 @@ class VRXGridPlotter(Node):
             self.grid_map = self.grid_map_inv[::-1]
             
         if self.is_dynamic:
-            self.create_timer(50.0, self.update_dynamic_obstacles) 
+            self.create_timer(40.0, self.update_dynamic_obstacles) 
 
         self.path_x, self.path_y = [], []
         self.current_pos = None 
